@@ -17,6 +17,8 @@ char = pygame.image.load('Game/standing.png')
 
 clock = pygame.time.Clock()
 
+score = 0
+
 class player(object):
     def __init__(self, x, y, width, height):
         self.x = x
@@ -25,7 +27,6 @@ class player(object):
         self.height = height
         self.vel = 5
         self.isJump = False
-        self.jumpCount = 10
         self.left = False
         self.right = False
         self.walkCount = 0
@@ -49,7 +50,7 @@ class player(object):
             else:
                 win.blit(walkLeft[0], (self.x, self.y))
         self.hitbox = (self.x + 17, self.y + 11, 29, 52)
-        pygame.draw.rect(win, (255, 0, 0), self.hitbox, 2)
+        #pygame.draw.rect(win, (255, 0, 0), self.hitbox, 2)
         
         
 class projectile(object):
@@ -76,54 +77,69 @@ class enemy(object):
             pygame.image.load('Game/L4E.png'), pygame.image.load('Game/L5E.png'), pygame.image.load('Game/L6E.png'),
             pygame.image.load('Game/L7E.png'), pygame.image.load('Game/L8E.png'), pygame.image.load('Game/L9E.png'),
             pygame.image.load('Game/L10E.png'), pygame.image.load('Game/L11E.png')]
+    
     def __init__(self, x, y, width, height, end):
         self.x = x
         self.y = y
         self.width = width
         self.height = height
         self.end = end
-        self.path = (x,end)
+        self.path = (self.x, self.end)
         self.walkCount = 0
         self.vel = 3
         self.hitbox = (self.x + 17, self.y + 2, 31, 57)
+        self.health = 10
+        self.visible = True
         
         
         
     def draw(self, win):
         self.move()
-        if self.walkCount +1 >= 33:
-            self.walkCount = 0
-        if self.vel > 0:
-            win.blit(self.walkRight[self.walkCount //3], (self.x, self.y))
-            self.walkCount +=1
-        else:
-            win.blit(self.walkLeft[self.walkCount //3], (self.x, self.y))
-            self.walkCount += 1
-        self.hitbox = (self.x + 17, self.y + 2, 31, 57)
-        pygame.draw.rect(win, (255,0, 0,), self.hitbox, 2)
+        if self.visible:
+            if self.walkCount +1 >= 33:
+                self.walkCount = 0
+                
+            if self.vel > 0:
+                win.blit(self.walkRight[self.walkCount //3], (self.x, self.y))
+                self.walkCount +=1
+            else:
+                win.blit(self.walkLeft[self.walkCount //3], (self.x, self.y))
+                self.walkCount += 1
+                
+            pygame.draw.rect(win,(255,0,0),(self.hitbox[0],self.hitbox[1]-20, 50,10)) 
+            pygame.draw.rect(win,(0,125,0),(self.hitbox[0],self.hitbox[1]-20, 50-(5*(10-self.health)),10))    
+            self.hitbox = (self.x + 17, self.y + 2, 31, 57)
+            #pygame.draw.rect(win, (255,0, 0,), self.hitbox, 2)
         
     def move(self):
         if self.vel >0:
             if self.x + self.vel < self.path[1]:
                 self.x += self.vel
             else:
-                self.vel = self.vel *-1
+                self.vel = self.vel * -1
                 self.walkCount = 0
         else:
             if self.x - self.vel > self.path[0]:
                 self.x += self.vel
             else:
-                self.vel = self.vel *-1
+                self.vel = self.vel * -1
                 self.walkCount = 0
         
     def hit(self):
-        print('hit')
+        if self.health >0:
+            self.health -= 1
+        else:
+            self.visible =  False  
+        
+        
     
     
     
 def redrawGameWindow():
-    global walkCount
+    
     win.blit(bg, (0, 0))
+    text = font.render('Score: '+ str(score), 1, (0,0,0))
+    win.blit(text,(350, 10))
     man.draw(win)
     zombies.draw(win)
     for bullet in bullets:
@@ -132,7 +148,8 @@ def redrawGameWindow():
     pygame.display.update()
 
 # mainloop
-man = player(300, 410, 64, 64)
+font = pygame.font.SysFont('comicsans', 30, True)
+man = player(200, 410, 64, 64)
 zombies = enemy(100, 410, 64, 64, 450)
 shootloop = 0
 bullets = []
@@ -153,6 +170,7 @@ while run:
         if bullet.y - bullet.radius < zombies.hitbox[1] + zombies.hitbox[3] and bullet.y + bullet.radius > zombies.hitbox[1]:
             if bullet.x + bullet.radius > zombies.hitbox[0] and bullet.x -bullet.radius <zombies.hitbox[0] + zombies.hitbox[2]:
                 zombies.hit()
+                score += 1
                 bullets.pop(bullets.index(bullet))
          
         if bullet.x < 500 and bullet.x > 0:
@@ -176,10 +194,10 @@ while run:
         man.left = True
         man.right = False
         man.standing = False
-    elif keys[pygame.K_RIGHT] and man.x < 500 - man.width - 5:
+    elif keys[pygame.K_RIGHT] and man.x < 500 - man.width - man.vel:
         man.x += man.vel
-        man.left = False
         man.right = True
+        man.left = False        
         man.standing = False
     else:
         man.standing = True
