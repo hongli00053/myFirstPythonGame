@@ -17,6 +17,12 @@ char = pygame.image.load('Game/standing.png')
 
 clock = pygame.time.Clock()
 
+bulletSound = pygame.mixer.Sound('Game/bullet.mp3')
+hitSound = pygame.mixer.Sound('Game/hit.mp3')
+
+music = pygame.mixer.music.load('Game/music.mp3')
+pygame.mixer.music.play(-1)
+
 score = 0
 
 class player(object):
@@ -51,6 +57,22 @@ class player(object):
                 win.blit(walkLeft[0], (self.x, self.y))
         self.hitbox = (self.x + 17, self.y + 11, 29, 52)
         #pygame.draw.rect(win, (255, 0, 0), self.hitbox, 2)
+    def hit(self):
+        self.x =60
+        self.y = 410
+        self.walkCount = 0
+        font1 = pygame.font.SysFont('comicsans', 100)
+        text = font1.render('-5', 1, (255,0,0))
+        win.blit(text, (250-(text.get_width()/2), 200))
+        pygame.display.update()
+        i = 0
+        while i < 300:
+            pygame.time.delay(10)
+            i += 1
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    i = 301
+                    pygame.quit()
         
         
 class projectile(object):
@@ -126,6 +148,7 @@ class enemy(object):
                 self.walkCount = 0
         
     def hit(self):
+        hitSound.play()
         if self.health >0:
             self.health -= 1
         else:
@@ -157,6 +180,13 @@ run = True
 while run:
     clock.tick(27)
     
+                
+    if man.hitbox[1] < zombies.hitbox[1] + zombies.hitbox[3] and man.hitbox[1] + man.hitbox[3] > zombies.hitbox[1]:
+        if man.hitbox[0] + man.hitbox[2] > zombies.hitbox[0] and man.hitbox[0] < zombies.hitbox[0] + zombies.hitbox[2]:
+            man.hit()
+            score -= 5
+
+    
     if shootloop > 0:
         shootloop +=1
     if shootloop > 3:
@@ -180,6 +210,7 @@ while run:
                 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_SPACE] and shootloop ==0:
+        bulletSound.play()
         if man.left:
             facing = -1
         else:
